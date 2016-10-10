@@ -9,7 +9,7 @@ shinyUI(pageWithSidebar(
   sidebarPanel(
     a("Document", href="http://rpubs.com/yorkhuang/217258"),
     div(""),
-    a("Source Code", href="https://yorkhuang-au.shinyapps.io/capprj/")
+    a("Source Code", href="https://github.com/yorkhuang-au/capprj")
   ),
   mainPanel(
     h3('Predict Next Word'),
