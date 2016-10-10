@@ -1,0 +1,58 @@
+---
+title: "Capstone Project"
+author: "York Huang"
+date: "11 September 2016"
+output: html_document
+---
+
+## Create Model
+
+```{r}
+options(java.parameters = "-Xmx16g")
+library(tm)
+library(stringi)
+library(RWeka)
+
+process_file<- function(filename, minFreq=10) {
+  raw_data <- readLines(file(filename, open='rb'), encoding='UTF-8', skipNul = TRUE)
+  closeAllConnections()
+  
+  docs <- Corpus(VectorSource(list(raw_data)) )
+  rm(raw_data)
+  gc()
+  
+  for( i in seq(docs)) {
+    docs[[i]] <- stri_replace_all_regex(stri_replace_all_regex(docs[[i]], '[^[:ascii:]]','' ), '[^a-zA-Z]',' ')
+  }
+  
+  docs <- tm_map(docs, tolower)
+  docs <- tm_map(docs, stripWhitespace)
+  docs <- tm_map(docs, PlainTextDocument)
+  
+  gram_3 <- TermDocumentMatrix(docs, control = list(tokenize = function(x) NGramTokenizer(x, Weka_control(min=3, max=3))))
+  rm(docs)
+  gc()
+  
+  gram_3_freq <- data.frame(frequency=rowSums(as.matrix(gram_3)))
+
+  gram_3_freq['word'] <- row.names(gram_3_freq)
+  gram_3_freq <- gram_3_freq[gram_3_freq$frequency>=minFreq,]
+
+  gram_3_freq$last<- stri_extract_last_words(gram_3_freq$word )
+
+  gram_3_freq$key <- stri_trim( stri_sub( gram_3_freq$word, 1, stri_locate_last_words(gram_3_freq$word)[,1]-1))
+  
+  row.names(gram_3_freq) <- NULL
+  gram_3_freq$word<- NULL
+
+  gram_3_freq
+} # End function process_file
+
+blogs_w3g<- process_file( 'Coursera-SwiftKey/final/en_US/en_US.blogs.txt',5)
+news_w3g <- process_file( 'Coursera-SwiftKey/final/en_US/en_US.news.txt',5)
+twitter_w3g <- process_file( 'Coursera-SwiftKey/final/en_US/en_US.twitter.txt',5)
+
+w3g <- rbind(blogs_w3g, news_w3g, twitter_w3g)
+
+write.table(w3g, file=gzfile("w3g.csv.gz"), sep="\t", row.names = F, col.names = T)
+
